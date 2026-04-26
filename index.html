@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ELITE CLASS - FINAL PRO EDITION</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&family=Amiri&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { brand: { 500: '#004dff', 600: '#0033cc' } },
+                    fontFamily: { sans: ['Outfit', 'SF Pro Display', 'system-ui', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Outfit', 'SF Pro Display', sans-serif; background: #ffffff; color: #1e293b; margin: 0; overflow: hidden; user-select: none; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        input { background: #f8fafc !important; border: 1px solid #e2e8f0 !important; color: #1e293b !important; border-radius: 12px !important; outline: none; }
+        .code-text { font-family: monospace; background: #f1f5f9; padding: 5px 12px; border-radius: 10px; color: #004dff; font-weight: 900; user-select: text; cursor: pointer; transition: all 0.2s; border: 1px solid #e2e8f0; }
+        .code-text:active { background: #e0f2fe; transform: scale(0.95); }
+        .loader { border: 3px solid #f1f5f9; border-top: 3px solid #004dff; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .quran-font { font-family: 'Amiri', serif; }
+        .sidebar-bg { background: linear-gradient(135deg, #004dff, #002db3); }
+        .chat-tab { transition: all 0.3s; cursor: pointer; border-bottom: 3px solid transparent; }
+        .chat-tab.active { border-bottom-color: #004dff; color: #004dff; font-weight: 900; }
+        .doc-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 25px; padding: 20px; margin-bottom: 15px; }
+        .btn-hover:active { transform: scale(0.96); }
+        .saturated { filter: saturate(1.8) contrast(1.1); }
+        .vibrant-btn { background: linear-gradient(135deg, #004dff, #0033cc); box-shadow: 0 10px 20px rgba(0, 77, 255, 0.2); }
+        @keyframes rainbowPoints {
+            0% { color: #004dff; }
+            15% { color: #ff0000; }
+            30% { color: #ffcc00; }
+            45% { color: #00cc00; }
+            60% { color: #9900cc; }
+            75% { color: #000000; }
+            100% { color: #004dff; }
+        }
+        .animate-rainbow { animation: rainbowPoints 5s linear infinite; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const firebaseConfig = {
+            apiKey: "AIzaSyDdGJrBkh44afdi9UtdvD98sJk_xr7VICY",
+            authDomain: "eliteclassapp-52651.firebaseapp.com",
+            projectId: "eliteclassapp-52651",
+            storageBucket: "eliteclassapp-52651.firebasestorage.app",
+            messagingSenderId: "557001115329",
+            appId: "1:557001115329:web:011925da55c84f3c737640"
+        };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const { useState, useEffect, useRef, useMemo } = React;
+
+        const cleanText = (t) => {
+            if (!t) return "";
+            return t.replace(/[\u064B-\u0652\u0670\u06D6-\u06ED]/g, "").replace(/[.:!؟?،,;؛]/g, "").trim();
+        };
+
+        const copyToClipboard = (text) => {
+            if (!text || text === '---') return;
+            const el = document.createElement('textarea');
+            el.value = text;
+            document.body.appendChild(el);
+            el.select();
+            try {
+                document.execCommand('copy');
+                alert("تم نسخ الكود: " + text);
+            } catch (err) {
+                alert("يرجى نسخ الكود يدوياً: " + text);
+            }
+            document.body.removeChild(el);
+        };
+
+        const getAv = (s) => `https://api.dicebear.com/7.x/avataaars/svg?seed=${s || Math.random()}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
+
+        function DhikrPopup({ onClose }) {
+            const dhikr = ["سبحان الله وبحمده سبحان الله العظيم", "لا اله الا الله وحده لا شريك له", "الحمد لله رب العالمين", "استغفر الله العظيم واتوب اليه", "اللهم صل وسلم على نبينا محمد"][Math.floor(Math.random() * 5)];
+            return (
+                <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm">
+                    <div className="bg-white p-10 max-w-sm w-full text-center space-y-8 rounded-[40px] shadow-2xl">
+                        <div className="w-20 h-20 bg-sky-100 text-sky-600 rounded-full flex items-center justify-center mx-auto text-3xl"><i className="fas fa-mosque"></i></div>
+                        <p className="quran-font text-3xl text-slate-800 leading-relaxed font-bold">{dhikr}</p>
+                        <button onClick={onClose} className="w-full py-5 vibrant-btn text-white rounded-2xl font-black shadow-lg saturated">تم</button>
+                    </div>
+                </div>
+            );
+        }
+
+        function App() {
+            const [profile, setProfile] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [view, setView] = useState('selection'); 
+            const [tab, setTab] = useState('home');
+            const [menu, setMenu] = useState(false);
+            const [showDhikr, setShowDhikr] = useState(false);
+
+            useEffect(() => {
+                const c = localStorage.getItem('elite_user_code');
+                if (c) {
+                    return db.collection('users').doc(c).onSnapshot(s => {
+                        if (s.exists) { setProfile(s.data()); setView('main'); }
+                        else { localStorage.removeItem('elite_user_code'); setView('selection'); }
+                        setLoading(false);
+                    }, () => setLoading(false));
+                } else setLoading(false);
+            }, []);
+
+            if (loading) return <div className="h-screen flex flex-col items-center justify-center bg-white"><div className="loader mb-4"></div><p className="font-black text-sky-600 tracking-widest">ELITE CLASS</p></div>;
+
+            return (
+                <div className="app-container relative h-screen overflow-hidden flex flex-col">
+                    {showDhikr && <DhikrPopup onClose={() => setShowDhikr(false)} />}
+                    {view === 'selection' && <Selection onSelect={setView} />}
+                    {view === 'auth_teacher' && <TeacherAuth onBack={() => setView('selection')} onLogin={p => { setProfile(p); setView('main'); setShowDhikr(true); }} />}
+                    {view === 'auth_student' && <StudentAuth onBack={() => setView('selection')} onLogin={p => { setProfile(p); setView('main'); setShowDhikr(true); }} />}
+                    
+                    {view === 'main' && profile && (
+                        <React.Fragment>
+                            <header className="p-6 flex justify-between items-center bg-white border-b border-slate-100 z-50">
+                                <div className="flex items-center gap-4">
+                                    <button onClick={() => setMenu(true)} className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-600 active:scale-90 transition-transform"><i className="fas fa-bars-staggered"></i></button>
+                                    <h1 className="font-black text-2xl text-sky-600 tracking-tighter">ELITE CLASS</h1>
+                                </div>
+                                <div className="flex items-center gap-3 bg-slate-50 p-1 pr-4 rounded-full border border-slate-100">
+                                    <span className="text-xs font-black text-slate-600">{cleanText(profile.firstName)}</span>
+                                    <img src={profile.avatarUrl || getAv(profile.uid)} className="w-10 h-10 rounded-full border border-sky-200 object-cover" />
+                                </div>
+                            </header>
+                            
+                            <main className="flex-1 overflow-y-auto p-5 pb-32 no-scrollbar">
+                                <Content tab={tab} profile={profile} onTab={setTab} />
+                            </main>
+                            
+                            <nav className="fixed bottom-0 left-0 right-0 bg-white p-6 flex justify-around items-center rounded-t-[40px] z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] border-t border-slate-50">
+                                <button onClick={()=>setTab('home')} className={`p-2 transition-all ${tab==='home'?'text-sky-600 scale-125':'text-slate-300'}`}><i className="fas fa-house text-2xl"></i></button>
+                                <button onClick={()=>setTab('chat')} className={`p-2 transition-all ${tab==='chat'?'text-sky-600 scale-125':'text-slate-300'}`}><i className="fas fa-comments text-2xl"></i></button>
+                                <div className="w-16 h-16 vibrant-btn rounded-full flex items-center justify-center -mt-16 border-[6px] border-white text-white shadow-xl animate-bounce-slow saturated"><i className="fas fa-plus"></i></div>
+                                <button onClick={()=>setTab('points')} className={`p-2 transition-all ${tab==='points'?'text-sky-600 scale-125':'text-slate-300'}`}><i className="fas fa-star text-2xl"></i></button>
+                                <button onClick={()=>setTab('classes')} className={`p-2 transition-all ${tab==='classes'?'text-sky-600 scale-125':'text-slate-300'}`}><i className="fas fa-users-rectangle text-2xl"></i></button>
+                            </nav>
+                            
+                            {menu && <Sidebar onClose={() => setMenu(false)} onTab={t => { setTab(t); setMenu(false); }} onLogout={() => { localStorage.removeItem('elite_user_code'); window.location.reload(); }} />}
+                        </React.Fragment>
+                    )}
+                </div>
+            );
+        }
+
+        function Selection({ onSelect }) {
+            return (
+                <div className="h-screen flex flex-col items-center justify-center p-8 space-y-12 bg-white">
+                    <h1 className="text-6xl font-black text-sky-600 tracking-tighter drop-shadow-sm">ELITE CLASS</h1>
+                    <div className="grid grid-cols-1 gap-6 w-full max-w-xs">
+                        <button onClick={() => onSelect('auth_teacher')} className="bg-slate-50 p-8 flex items-center gap-6 rounded-[30px] border border-slate-100 group transition-all active:scale-95 shadow-sm">
+                            <div className="w-16 h-16 bg-brand-500 rounded-2xl flex items-center justify-center text-2xl text-white shadow-md"><i className="fas fa-user-tie"></i></div>
+                            <span className="font-black text-xl text-slate-800 tracking-tight">{cleanText("أستاذ")}</span>
+                        </button>
+                        <button onClick={() => onSelect('auth_student')} className="bg-slate-50 p-8 flex items-center gap-6 rounded-[30px] border border-slate-100 group transition-all active:scale-95 shadow-sm">
+                            <div className="w-16 h-16 bg-blue-400 rounded-2xl flex items-center justify-center text-2xl text-white shadow-md"><i className="fas fa-graduation-cap"></i></div>
+                            <span className="font-black text-xl text-slate-800 tracking-tight">{cleanText("تلميذ")}</span>
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        function TeacherAuth({ onBack, onLogin }) {
+            const [mode, setMode] = useState('menu'); 
+            const [f, setF] = useState('');
+            const [l, setL] = useState('');
+            const [gc, setGc] = useState('');
+            const [ic, setIc] = useState('');
+            const [ld, setLd] = useState(false);
+            const create = async () => {
+                if (!f || !l) return;
+                setLd(true);
+                const c = 'TCH-' + Math.random().toString(36).substr(2, 8).toUpperCase();
+                const p = { uid: c, firstName: cleanText(f), lastName: cleanText(l), role: 'teacher', points: 0, avatarUrl: getAv(c) };
+                await db.collection('users').doc(c).set(p);
+                setGc(c); setMode('show'); setLd(false);
+            };
+            const login = async () => {
+                if (!ic) return;
+                setLd(true);
+                const s = await db.collection('users').doc(ic).get();
+                if (s.exists && s.data().role === 'teacher') { localStorage.setItem('elite_user_code', ic); onLogin(s.data()); }
+                else alert('كود خاطئ أو غير مسجل');
+                setLd(false);
+            };
+            return (
+                <div className="h-screen flex flex-col items-center justify-center p-8 space-y-8 bg-white animate-in slide-in-from-bottom duration-500">
+                    <button onClick={onBack} className="absolute top-10 right-10 text-slate-300"><i className="fas fa-arrow-right text-2xl"></i></button>
+                    <h2 className="text-4xl font-black text-slate-800">{cleanText("بوابة الأستاذ")}</h2>
+                    {mode === 'menu' && <div className="w-full max-w-xs space-y-4"><button onClick={() => setMode('create')} className="w-full p-6 bg-slate-50 border border-slate-100 rounded-3xl font-black text-slate-700 shadow-sm">إنشاء حساب جديد</button><button onClick={() => setMode('login')} className="w-full p-6 bg-sky-50 rounded-3xl font-black text-sky-700">تسجيل الدخول</button></div>}
+                    {mode === 'create' && <div className="w-full max-w-xs space-y-4"><input type="text" placeholder="الاسم الشخصي" className="w-full p-5" value={f} onChange={e=>setF(e.target.value)} /><input type="text" placeholder="اللقب العائلي" className="w-full p-5" value={l} onChange={e=>setL(e.target.value)} /><button onClick={create} className="w-full p-6 bg-brand-500 text-white rounded-3xl font-black shadow-lg">{ld?'جاري التوليد...':'توليد الكود الخاص'}</button></div>}
+                    {mode === 'show' && <div className="w-full max-w-xs text-center space-y-6"><h3 className="text-xl font-black text-slate-700">{cleanText("كودك السري للولوج")}</h3><div onClick={()=>copyToClipboard(gc)} className="bg-slate-50 p-8 text-3xl font-black text-brand-500 rounded-3xl border border-slate-100 code-text shadow-inner tracking-widest">{gc}</div><button onClick={() => setMode('login')} className="w-full p-6 bg-brand-500 text-white rounded-3xl font-black shadow-lg">دخول</button></div>}
+                    {mode === 'login' && <div className="w-full max-w-xs space-y-4"><input type="text" placeholder="أدخل كودك السري هنا" className="w-full p-6 text-center font-black text-2xl tracking-widest uppercase shadow-inner" value={ic} onChange={e=>setIc(e.target.value)} /><button onClick={login} className="w-full p-6 vibrant-btn text-white rounded-3xl font-black shadow-lg text-xl saturated">{ld?'جاري...':'دخول'}</button></div>}
+                </div>
+            );
+        }
+
+        function StudentAuth({ onBack, onLogin }) {
+            const [ic, setIc] = useState('');
+            const [ld, setLd] = useState(false);
+            const login = async () => {
+                if (!ic) return;
+                setLd(true);
+                const s = await db.collection('users').doc(ic).get();
+                if (s.exists && s.data().role === 'student') { localStorage.setItem('elite_user_code', ic); onLogin(s.data()); }
+                else alert('كود التلميذ غير صحيح');
+                setLd(false);
+            };
+            return (
+                <div className="h-screen flex flex-col items-center justify-center p-8 space-y-8 bg-white animate-in slide-in-from-bottom duration-500">
+                    <button onClick={onBack} className="absolute top-10 right-10 text-slate-300"><i className="fas fa-arrow-right text-2xl"></i></button>
+                    <h2 className="text-4xl font-black text-slate-800">{cleanText("بوابة التلميذ")}</h2>
+                    <input type="text" placeholder="أدخل كود التلميذ السري" className="w-full max-w-xs p-8 bg-slate-50 border border-slate-100 text-center font-black text-2xl rounded-3xl tracking-widest uppercase shadow-inner" value={ic} onChange={e=>setIc(e.target.value)} />
+                    <button onClick={login} className="w-full max-w-xs p-6 bg-brand-500 text-white rounded-3xl font-black shadow-lg saturated">{ld?'جاري...':'دخول النظام'}</button>
+                </div>
+            );
+        }
+
+        function Content({ tab, profile, onTab }) {
+            switch(tab) {
+                case 'home': return <Home profile={profile} />;
+                case 'chat': return <Chat profile={profile} />;
+                case 'points': return <Points profile={profile} />;
+                case 'exams': return <iframe src="https://www.dzexams.com" className="w-full h-full rounded-[30px] border border-slate-100 shadow-sm" />;
+                case 'ai': return <div className="h-full flex flex-col items-center justify-center p-10 text-center space-y-8"><div className="w-32 h-32 bg-brand-500 rounded-[40px] flex items-center justify-center text-6xl text-white shadow-xl animate-pulse"><i className="fas fa-robot"></i></div><h2 className="text-3xl font-black text-slate-800">{cleanText("سيتم دمج الذكاء الاصطناعي قريبا")}</h2><button onClick={() => window.open('https://chatgpt.com/', '_blank')} className="px-10 py-5 bg-brand-500 text-white rounded-3xl font-black shadow-lg btn-hover tracking-tight">فتح CHAT GPT </button></div>;
+                case 'calc': return <iframe src="https://www.dzexams.pro/ar/releve/releve-2sc-mob.php" className="w-full h-full rounded-[30px] border border-slate-100 shadow-sm" />;
+                case 'classes': return <Classes profile={profile} />;
+                case 'advice': return <Advice />;
+                case 'info': return <Info />;
+                default: return <Home profile={profile} />;
+            }
+        }
+
+        function Home({ profile }) {
+            const [updating, setUpdating] = useState(false);
+
+            const handleFileUpload = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                if (file.size > 1000000) return alert("الصورة كبيرة جداً (الحد الأقصى 1MB)");
+                
+                setUpdating(true);
+                const reader = new FileReader();
+                reader.onloadend = async () => {
+                    try {
+                        await db.collection('users').doc(profile.uid).update({ avatarUrl: reader.result });
+                    } catch(e) { 
+                        alert("فشل في تحديث الصورة"); 
+                    }
+                    setUpdating(false);
+                };
+                reader.readAsDataURL(file);
+            };
+
+            return (
+                <div className="bg-white p-10 text-center space-y-8 rounded-[40px] border border-slate-100 shadow-sm animate-in fade-in relative">
+                    {updating && (
+                        <div className="absolute inset-0 bg-white/80 z-20 flex flex-col items-center justify-center gap-3 rounded-[40px]">
+                            <div className="loader"></div>
+                            <span className="font-black text-brand-500 text-xs text-center">جاري الرفع...</span>
+                        </div>
+                    )}
+                    
+                    <div className="relative inline-block group">
+                        <div className="w-48 h-48 rounded-full mx-auto border-4 border-slate-50 shadow-xl bg-slate-50 overflow-hidden">
+                            <img 
+                                src={profile.avatarUrl || getAv(profile.uid)} 
+                                style={{ width: '100%', height: '100%' }} 
+                                className="object-cover" 
+                            />
+                        </div>
+                        <label className="absolute bottom-2 right-2 bg-brand-500 text-white w-12 h-12 rounded-full border-4 border-white flex items-center justify-center shadow-lg active:scale-95 transition-transform cursor-pointer">
+                            <i className="fas fa-camera text-sm"></i>
+                            <input type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
+                        </label>
+                    </div>
+
+                    <div className="space-y-1">
+                        <h2 className="text-3xl font-black text-slate-800 tracking-tight leading-tight">{cleanText("أهلاً بك،")} {cleanText(profile.firstName)}</h2>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">{profile.role === 'teacher' ? 'منصة الأستاذ المعتمد' : ' ELITE CLASS'}</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4">
+                        {profile.role === 'student' ? (
+                            <div className="bg-sky-50 p-8 rounded-[35px] border border-sky-100 relative overflow-hidden flex flex-col items-center justify-center">
+                                <p className="text-[10px] text-sky-600 font-black mb-2 uppercase tracking-[0.2em] relative z-10">{cleanText("نقاط المشاركة")}</p>
+                                <p className="text-8xl font-black animate-rainbow relative z-10">{profile.points || 0}</p>
+                                <div className="absolute -right-8 -bottom-8 opacity-5 text-sky-600 text-[150px] rotate-12"><i className="fas fa-star"></i></div>
+                            </div>
+                        ) : (
+                            <div className="bg-slate-50 p-6 rounded-[35px] border border-slate-100 flex items-center justify-between">
+                                <div className="text-right">
+                                    <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">{cleanText("الرتبة")}</p>
+                                    <p className="font-black text-slate-700 text-xl">{cleanText("أستاذ المادة")}</p>
+                                </div>
+                                <div className="w-12 h-12 bg-brand-500 text-white rounded-2xl flex items-center justify-center shadow-lg"><i className="fas fa-check-decagram"></i></div>
+                            </div>
+                        )}
+                        <div className="bg-slate-50 p-6 rounded-[35px] border border-slate-100">
+                            <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mb-3">{cleanText("كود حسابك : ")}</p>
+                            <div onClick={()=>copyToClipboard(profile.uid)} className="code-text active:scale-95 text-[12px] tracking-widest bg-white py-3 rounded-2xl shadow-sm border border-slate-200">{profile.uid}</div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function Points({ profile }) {
+            const [cls, setCls] = useState([]);
+            const [sel, setSel] = useState(null);
+            const [stds, setStds] = useState([]);
+            const [ld, setLd] = useState(false);
+
+            useEffect(() => {
+                if (profile.role === 'teacher') {
+                    return db.collection('classes').where('teacherId', '==', profile.uid).onSnapshot(s => {
+                        const l = s.docs.map(d => ({ id: d.id, ...d.data() }));
+                        setCls(l); if (l.length > 0 && !sel) setSel(l[0]);
+                    });
+                } else if (profile.classId) {
+                    db.collection('classes').doc(profile.classId).get().then(d => d.exists && setSel({ id: d.id, ...d.data() }));
+                }
+            }, [profile]);
+
+            useEffect(() => {
+                if (sel) {
+                    return db.collection(`classes/${sel.id}/students`).onSnapshot(s => {
+                        const l = s.docs.map(d => ({ id: d.id, ...d.data() }));
+                        l.sort((a, b) => (b.participation || 0) - (a.participation || 0));
+                        setStds(l);
+                    });
+                }
+            }, [sel]);
+
+            const up = async (sid, d) => {
+                const s = stds.find(x => x.id === sid);
+                const n = Math.max(0, (s.participation || 0) + d);
+                await db.collection(`classes/${sel.id}/students`).doc(sid).update({ participation: n });
+            };
+
+            const savePoints = async () => {
+                setLd(true);
+                try {
+                    for (const s of stds) {
+                        if (s.secretCode && s.secretCode !== '---') {
+                            await db.collection('users').doc(s.secretCode).update({ points: s.participation || 0 });
+                        }
+                    }
+                    alert("نظام النخبة: تم تحديث نقاط جميع الطلاب بنجاح");
+                } catch(e) { alert("حدث خطأ أثناء الحفظ"); }
+                setLd(false);
+            };
+
+            return (
+                <div className="space-y-6">
+                    <div className="flex justify-between items-center">
+                        <h2 className="text-2xl font-black text-slate-800">{cleanText("لوحة الترتيب")}</h2>
+                        {profile.role==='teacher' && (
+                            <button onClick={savePoints} className="bg-green-500 text-white px-6 py-3 rounded-2xl text-xs font-black shadow-lg shadow-green-100 btn-hover">
+                                {ld ? 'جاري الحفظ...' : 'حفظ التغييرات'}
+                            </button>
+                        )}
+                    </div>
+                    {profile.role==='teacher'&&cls.length>1&&<div className="flex gap-3 overflow-x-auto no-scrollbar">{cls.map(c=><button key={c.id} onClick={()=>setSel(c)} className={`px-6 py-3 rounded-2xl text-xs font-black transition-all ${sel?.id===c.id?'bg-brand-500 text-white shadow-md':'bg-slate-50 text-slate-400 border border-slate-100'}`}>{cleanText(c.name)}</button>)}</div>}
+                    <div className="bg-white p-6 space-y-4 rounded-[35px] border border-slate-100 shadow-sm min-h-[300px]">
+                        {stds.length === 0 ? <div className="text-center opacity-10 py-20 font-black tracking-widest italic">{cleanText("لا توجد بيانات حالياً")}</div> : stds.map((s, i) => (
+                            <div key={s.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-3xl border border-slate-100 hover:border-brand-500/20 transition-all">
+                                <div className="flex items-center gap-4">
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black shadow-sm ${i===0?'bg-yellow-400 text-white':i===1?'bg-slate-300 text-white':i===2?'bg-amber-600 text-white':'bg-white text-slate-400 border border-slate-100'}`}>{i+1}</div>
+                                    <div><p className="font-black text-sm text-slate-700">{cleanText(s.fullName)}</p><p className="text-[10px] text-brand-500 font-black uppercase tracking-tight">{cleanText("النقاط")} {s.participation || 0}</p></div>
+                                </div>
+                                {profile.role==='teacher' && <div className="flex gap-2"><button onClick={()=>up(s.id,1)} className="w-10 h-10 bg-white text-brand-500 rounded-xl border border-brand-500/10 shadow-sm active:bg-brand-500 active:text-white"><i className="fas fa-plus"></i></button><button onClick={()=>up(s.id,-1)} className="w-10 h-10 bg-white text-red-500 rounded-xl border border-red-500/10 shadow-sm active:bg-red-500 active:text-white"><i className="fas fa-minus"></i></button></div>}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        function Chat({ profile }) {
+            const [mode, setMode] = useState('global'); 
+            const [code, setCode] = useState('');
+            const [cls, setCls] = useState(null);
+            const [msgs, setMsgs] = useState([]);
+            const [text, setText] = useState('');
+            const scroll = useRef();
+
+            useEffect(() => {
+                const path = mode === 'global' ? 'global_messages' : `classes/${cls?.id}/messages`;
+                if (mode === 'global' || (mode === 'class' && cls)) {
+                    return db.collection(path).orderBy('timestamp', 'asc').onSnapshot(s => {
+                        setMsgs(s.docs.map(d => ({ id: d.id, ...d.data() })));
+                        setTimeout(() => scroll.current?.scrollTo(0, scroll.current.scrollHeight), 100);
+                    });
+                }
+            }, [mode, cls]);
+
+            const joinClass = async () => {
+                if (!code) return;
+                const s = await db.collection('classes').where('chatCode', '==', code).get();
+                if (!s.empty) {
+                    const classId = s.docs[0].id;
+                    if (profile.role === 'student' && profile.classId !== classId) {
+                        alert('هذا الكود مخصص لقسم آخر'); return;
+                    }
+                    setCls({ id: classId, ...s.docs[0].data() });
+                } else alert('كود القسم غير صحيح');
+            };
+
+            const send = async () => {
+                if (!text.trim()) return;
+                const path = mode === 'global' ? 'global_messages' : `classes/${cls.id}/messages`;
+                await db.collection(path).add({
+                    senderId: profile.uid,
+                    senderName: cleanText(profile.firstName),
+                    senderAvatar: profile.avatarUrl || getAv(profile.uid),
+                    text: text.trim(),
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                setText('');
+            };
+
+            return (
+                <div className="h-full flex flex-col -m-5 bg-white">
+                    <div className="flex border-b border-slate-100 bg-slate-50/50">
+                        <div onClick={()=>setMode('global')} className={`flex-1 p-5 text-center chat-tab font-black text-sm uppercase tracking-tighter ${mode==='global'?'active':''}`}>{cleanText("الشات العالمي")}</div>
+                        <div onClick={()=>setMode('class')} className={`flex-1 p-5 text-center chat-tab font-black text-sm uppercase tracking-tighter ${mode==='class'?'active':''}`}>{cleanText("شات القسم")}</div>
+                    </div>
+
+                    {mode === 'class' && !cls ? (
+                        <div className="flex-1 flex flex-col items-center justify-center p-10 space-y-8 animate-in zoom-in">
+                            <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center text-4xl text-brand-500 shadow-inner"><i className="fas fa-lock"></i></div>
+                            <input type="text" placeholder="ادخل كود شات القسم" className="w-full max-w-xs p-6 text-center font-black text-xl tracking-[0.3em] shadow-sm" value={code} onChange={e=>setCode(e.target.value)} />
+                            <button onClick={joinClass} className="w-full max-w-xs py-5 vibrant-btn text-white rounded-3xl font-black shadow-lg saturated">دخول القسم</button>
+                        </div>
+                    ) : (
+                        <React.Fragment>
+                            <div className="flex-1 overflow-y-auto p-5 space-y-5 no-scrollbar" ref={scroll} style={{ background: 'linear-gradient(to bottom, #ffffff, #fafafa)' }}>
+                                {msgs.map(m => (
+                                    <div key={m.id} className={`flex gap-3 max-w-[85%] ${m.senderId === profile.uid ? 'mr-auto flex-row-reverse' : 'ml-auto'}`}>
+                                        <img src={m.senderAvatar} className="w-10 h-10 rounded-full mt-auto border border-white shadow-sm object-cover" />
+                                        <div className={`p-4 rounded-[30px] shadow-sm ${m.senderId === profile.uid ? 'bg-brand-500 text-white rounded-tl-none' : 'bg-white text-slate-700 rounded-tr-none border border-slate-100'}`}>
+                                            <p className="text-[9px] opacity-40 mb-1 font-black">{m.senderName}</p><p className="text-sm font-medium leading-relaxed">{m.text}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="p-4 bg-white border-t border-slate-100 flex gap-3 shadow-[0_-10px_30px_rgba(0,0,0,0.02)]">
+                                <input type="text" placeholder="اكتب هنا..." className="flex-1 px-8 py-5 outline-none text-sm bg-slate-50 rounded-full border-none" value={text} onChange={e=>setText(e.target.value)} onKeyPress={e=>e.key==='Enter'&&send()} />
+                                <button onClick={send} className="w-14 h-14 vibrant-btn text-white rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-transform saturated"><i className="fas fa-paper-plane text-xl -mr-1"></i></button>
+                            </div>
+                        </React.Fragment>
+                    )}
+                </div>
+            );
+        }
+
+        function Classes({ profile }) {
+            const [cls, setCls] = useState([]);
+            const [showC, setShowC] = useState(false);
+            const [showS, setShowS] = useState(false);
+            const [cn, setCn] = useState('');
+            const [sn, setSn] = useState('');
+            const [sel, setSel] = useState(null);
+            const [stds, setStds] = useState([]);
+            const [ld, setLd] = useState(false);
+
+            useEffect(() => {
+                if (profile.role === 'teacher') {
+                    return db.collection('classes').where('teacherId', '==', profile.uid).onSnapshot(s => setCls(s.docs.map(d => ({ id: d.id, ...d.data() }))));
+                }
+            }, [profile.uid]);
+            useEffect(() => {
+                if (sel) {
+                    return db.collection(`classes/${sel.id}/students`).onSnapshot(s => setStds(s.docs.map(d => ({ id: d.id, ...d.data() }))));
+                }
+            }, [sel]);
+
+            const addC = async () => {
+                if (!cn) return;
+                const c = Math.floor(10000000 + Math.random() * 90000000).toString();
+                await db.collection('classes').add({ name: cleanText(cn), teacherId: profile.uid, chatCode: c });
+                setShowC(false); setCn('');
+            };
+            const addS = async () => {
+                if (!sn) return;
+                await db.collection(`classes/${sel.id}/students`).add({ fullName: cleanText(sn), participation: 0, test1: 0, test2: 0, exam: 0, secretCode: '---' });
+                setSn(''); setShowS(false);
+            };
+
+            const gen = async () => {
+                const targets = stds.filter(x => x.secretCode === '---' || !x.secretCode || x.secretCode.length < 5);
+                if (!sel || targets.length === 0) return alert("لا يوجد طلاب جدد لتوليد أكوادهم");
+                setLd(true);
+                try {
+                    let count = 0;
+                    for (const s of targets) {
+                        const newCode = 'STD-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+                        await db.collection('users').doc(newCode).set({ 
+                            uid: newCode, firstName: cleanText(s.fullName), role: 'student', points: 0, classId: sel.id, avatarUrl: getAv(newCode) 
+                        });
+                        await db.collection(`classes/${sel.id}/students`).doc(s.id).update({ secretCode: newCode });
+                        count++;
+                    }
+                    alert(`عملية ناجحة: تم توليد ${count} كود جديد بنجاح`);
+                } catch(e) { alert("خطأ تقني أثناء التوليد"); }
+                setLd(false);
+            };
+
+            const downloadCodes = (format) => {
+                if (stds.length === 0) return alert("لا يوجد طلاب لتحميل أكوادهم");
+                let content = "ELITE CLASS - قائمة ولوج التلاميذ\n=================================\n";
+                content += "القسم: " + cleanText(sel.name) + "\nالتاريخ: " + new Date().toLocaleDateString('ar-EG') + "\n=================================\n\n";
+                stds.forEach(s => {
+                    const name = cleanText(s.fullName).padEnd(25);
+                    const code = s.secretCode || "---";
+                    content += `${name} ------>   ${code}\n`;
+                });
+                if (format === 'txt') {
+                    const blob = new Blob(["\uFEFF" + content], { type: 'text/plain;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `أكواد_تلاميذ_${cleanText(sel.name)}.txt`;
+                    link.click();
+                } else {
+                    const win = window.open('', '_blank');
+                    win.document.write(`<html dir="rtl"><head><title>أكواد ${cleanText(sel.name)}</title><style>body{font-family:Arial;padding:40px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:12px;text-align:right}th{background:#f8fafc}h1{color:#004dff;text-align:center}</style></head><body><h1>ELITE CLASS</h1><p>القسم: ${cleanText(sel.name)}</p><table><thead><tr><th>الاسم الكامل</th><th>الكود الخاص</th></tr></thead><tbody>${stds.map(s=>`<tr><td>${cleanText(s.fullName)}</td><td style="font-family:monospace;color:#004dff;font-weight:bold">${s.secretCode}</td></tr>`).join('')}</tbody></table><script>window.print();setTimeout(()=>window.close(),500);<\/script></body></html>`);
+                    win.document.close();
+                }
+            };
+
+            if (profile.role === 'student') return <div className="p-20 text-center opacity-10 font-black tracking-widest uppercase">{cleanText("قسم الأساتذة محمي")}</div>;
+
+            return (
+                <div className="space-y-6 animate-in slide-in-from-right duration-500">
+                    <div className="flex justify-between items-center"><h2 className="text-2xl font-black text-slate-800">{cleanText("إدارة الأقسام")}</h2><button onClick={()=>setShowC(true)} className="w-12 h-12 bg-slate-50 text-brand-500 rounded-2xl flex items-center justify-center border border-slate-100 shadow-sm active:rotate-90 transition-transform"><i className="fas fa-plus"></i></button></div>
+                    <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
+                        {cls.map(c => (
+                            <button key={c.id} onClick={()=>setSel(c)} className={`min-w-[170px] p-7 rounded-[40px] border text-right transition-all transform ${sel?.id === c.id ? 'bg-brand-500 border-brand-500 text-white shadow-xl scale-105' : 'bg-slate-50 text-slate-400 border-slate-100 hover:bg-slate-100'}`}>
+                                <p className="font-black text-sm mb-1">{cleanText(c.name)}</p>
+                                <p onClick={(e)=>{ e.stopPropagation(); copyToClipboard(c.chatCode); }} className="text-[10px] opacity-60 font-black code-text inline-block py-1 px-2 border-white/20 bg-white/10">Chat {c.chatCode}</p>
+                            </button>
+                        ))}
+                    </div>
+                    {sel && (
+                        <div className="bg-white p-7 overflow-x-auto rounded-[40px] border border-slate-100 shadow-sm animate-in zoom-in duration-300">
+                            <div className="flex justify-between items-center mb-6"><h3 className="font-black text-brand-500 text-[10px] uppercase tracking-widest">{cleanText("بيانات طلاب")} {cleanText(sel.name)}</h3><button onClick={()=>setShowS(true)} className="bg-sky-50 text-brand-500 px-5 py-2.5 rounded-2xl text-[10px] font-black border border-sky-100">إضافة طالب</button></div>
+                            <table className="w-full text-[10px] text-center border-separate border-spacing-y-2">
+                                <thead className="opacity-20 uppercase font-black"><tr><th className="p-2">الاسم</th><th className="p-2">مشاركة</th><th className="p-2">فرض1</th><th className="p-2">فرض2</th><th className="p-2">امتحان</th><th className="p-2">الكود</th></tr></thead>
+                                <tbody>
+                                    {stds.map(s => (
+                                        <tr key={s.id} className="bg-slate-50">
+                                            <td className="p-4 font-black rounded-r-3xl text-slate-700">{cleanText(s.fullName)}</td>
+                                            <td className="p-4"><input type="number" className="w-10 p-2 text-center" value={s.participation} onChange={e=>db.collection(`classes/${sel.id}/students`).doc(s.id).update({participation: Number(e.target.value)})} /></td>
+                                            <td className="p-4"><input type="number" className="w-10 p-2 text-center" value={s.test1} onChange={e=>db.collection(`classes/${sel.id}/students`).doc(s.id).update({test1: Number(e.target.value)})} /></td>
+                                            <td className="p-4"><input type="number" className="w-10 p-2 text-center" value={s.test2} onChange={e=>db.collection(`classes/${sel.id}/students`).doc(s.id).update({test2: Number(e.target.value)})} /></td>
+                                            <td className="p-4"><input type="number" className="w-10 p-2 text-center" value={s.exam} onChange={e=>db.collection(`classes/${sel.id}/students`).doc(s.id).update({exam: Number(e.target.value)})} /></td>
+                                            <td className="p-4 rounded-l-3xl"><span onClick={()=>copyToClipboard(s.secretCode)} className="code-text text-[12px] tracking-widest block py-2">{s.secretCode}</span></td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                            <div className="flex flex-col gap-3 mt-8">
+                                <button onClick={gen} disabled={ld} className="w-full bg-amber-500 text-white py-5 rounded-[30px] font-black text-xs shadow-lg active:scale-95 transition-all">{ld?'جاري التوليد...':'توليد كودات التلاميذ الجدد'}</button>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button onClick={() => downloadCodes('txt')} className="bg-sky-50 text-brand-500 border border-sky-100 py-5 rounded-[30px] font-black text-xs shadow-sm flex items-center justify-center gap-2"><i className="fas fa-file-lines"></i> تحميل TXT</button>
+                                    <button onClick={() => downloadCodes('pdf')} className="bg-red-50 text-red-600 border border-red-100 py-5 rounded-[30px] font-black text-xs shadow-sm flex items-center justify-center gap-2"><i className="fas fa-file-pdf"></i> طباعة PDF</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    {showC && <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-8 backdrop-blur-sm"><div className="bg-white w-full max-w-sm p-10 space-y-6 rounded-[45px] shadow-2xl scale-up"><h3 className="font-black text-2xl text-slate-800 text-center">{cleanText("إنشاء قسم جديد")}</h3><input type="text" placeholder="اسم القسم" className="w-full p-6" value={cn} onChange={e=>setCn(e.target.value)} /><button onClick={addC} className="w-full py-5 bg-brand-500 text-white rounded-[25px] font-black shadow-lg">تأكيد الإنشاء</button><button onClick={()=>setShowC(false)} className="w-full py-4 opacity-30 font-bold text-slate-500">تراجع</button></div></div>}
+                    {showS && <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-8 backdrop-blur-sm"><div className="bg-white w-full max-w-sm p-10 space-y-6 rounded-[45px] shadow-2xl scale-up"><h3 className="font-black text-2xl text-slate-800 text-center">{cleanText("إضافة طالب جديد")}</h3><input type="text" placeholder="الاسم الشخصي واللقب" className="w-full p-6" value={sn} onChange={e=>setSn(e.target.value)} /><button onClick={addS} className="w-full py-5 bg-brand-500 text-white rounded-[25px] font-black shadow-lg">إضافة للقائمة</button><button onClick={()=>setShowS(false)} className="w-full py-4 opacity-30 font-bold text-slate-500">إلغاء</button></div></div>}
+                </div>
+            );
+        }
+
+        function Advice() {
+            return (
+                <div className="bg-white min-h-screen p-8 space-y-10 animate-in fade-in duration-500 overflow-y-auto no-scrollbar pb-32">
+                    <div className="text-center space-y-4">
+                        <div className="w-20 h-20 bg-brand-500 text-white rounded-[30px] flex items-center justify-center mx-auto text-3xl shadow-xl shadow-sky-100"><i className="fas fa-lightbulb"></i></div>
+                        <h2 className="text-4xl font-black text-brand-500 tracking-tighter">{cleanText("نصائح وتوجيهات")}</h2>
+                        <p className="text-slate-400 font-black text-xs uppercase tracking-widest">توجيهات وحلول لمشاكلكم الدراسية</p>
+                    </div>
+
+                    <div className="doc-card border-r-8 border-r-brand-500">
+                        <h3 className="text-xl font-black text-brand-500 mb-4 flex items-center gap-3"><i className="fas fa-brain"></i> كيفاش تفهم وماشي غير تحفظ؟</h3>
+                        <p className="text-slate-700 leading-relaxed font-bold text-sm">
+                            يا جماعة الخير، القراية في الدزاير راهي ولات عقلية قبل ما تكون حفاظة. بزاف منكم يروح يحفظ الدروس كيما راهم وفي الاختبار ينسى كلش. الحل هو "الفهامة". كي تقبض درس، حاول تشرحو لروحك بالدارجة، اسأل روحك "علاش هكذا؟". كي تفهم الساس، الحيوط (يعني الحفاظة) يجي وحدو. وما تنساش، العقل ماشي "ميموار" تع تيليفون، لازم تعمرو بالحاجة اللي تفيد.
+                        </p>
+                    </div>
+
+                    <div className="doc-card border-r-8 border-r-red-500">
+                        <h3 className="text-xl font-black text-red-600 mb-4 flex items-center gap-3"><i className="fas fa-hourglass-half"></i> مشكل ضياع الوقت والتقلاق</h3>
+                        <p className="text-slate-700 leading-relaxed font-bold text-sm">
+                            أكبر عدو للطالب هو "الفايسبوك" و"التيك توك" قبل الاختبارات. الوقت هو راس مالك. ماشي لازم تقرا 10 سوايع في النهار، اقرا برك ساعتين بصح "كونسونتري" فيهم. نحي التيليفون وحط راسك. وبالنسبة للستريس، ربي سبحانو قال "ولا تزر وازرة وزر أخرى"، دير اللي عليك والباقي على ربي. التقلاق ماراح ينقصلك تعب ماراح يزيدلك نقطة.
+                        </p>
+                    </div>
+
+                    <div className="doc-card border-r-8 border-r-yellow-500">
+                        <h3 className="text-xl font-black text-amber-600 mb-4 flex items-center gap-3"><i className="fas fa-map-signs"></i> كيفاش تختار تخصصك؟</h3>
+                        <p className="text-slate-700 leading-relaxed font-bold text-sm">
+                            بزاف منكم يخاف من نهار الباك والتوجيه. النصيحة الأغلى هي: دير الحاجة اللي تحبها نتا، ماشي اللي يحبوها داركم ولا صحابك. نتا اللي راح تصهر الليالي، ونتا اللي راح تخدم بيها غدوة. اسأل روحك: "واش هي الحاجة اللي نقدر نقعد فيها ساعات وما نكرهش؟". هذيك هي طريقك. ما تسمعش لهضرة "هذا التخصص فيه الدراهم"، الدراهم يجو كي تكون نتا مطرطق في خدمتك.
+                        </p>
+                    </div>
+
+                    <div className="doc-card border-r-8 border-r-green-500">
+                        <h3 className="text-xl font-black text-green-600 mb-4 flex items-center gap-3"><i className="fas fa-comments"></i> هضرة مع التلاميذ</h3>
+                        <p className="text-slate-700 leading-relaxed font-bold text-sm">
+                            يا وليدي/بنتي، الأستاذ راهو هنا باش يعاونك، ماشي باش يعجزك. ادخل للقسم باش تتعلم، ماشي باش تجوز الوقت. النقطة مجرد رقم، بصح العلم هو اللي راح يبنيك. كون عاقل، نظم دوزانك، واسمع مليح. اللي يتعب اليوم، يضحك غدوة في النتائج. ربي يوفقكم كامل ويفرح والديكم بيكم.
+                        </p>
+                    </div>
+                </div>
+            );
+        }
+
+        function Info() {
+            const [page, setPage] = useState('main');
+            const team = ["عبد الحق", "ساجد حمزة", "أحمد هاشم", "عبد الحميد", "حسام", "صهيب", "عبد الله", "سيف الدين", "إسلام", "عبد الجليل", "إسحاق", "حبيب", "ودود", "ياسر"];
+            
+            if (page === 'doc') return (
+                <div className="bg-white min-h-screen p-8 space-y-8 animate-in fade-in duration-500 overflow-y-auto no-scrollbar pb-32">
+                    <button onClick={()=>setPage('main')} className="bg-slate-100 p-5 rounded-3xl text-slate-600 font-black flex items-center gap-2 active:scale-95 transition-transform"><i className="fas fa-arrow-right"></i> {cleanText("العودة")}</button>
+                    <div className="text-center space-y-4">
+                        <div className="w-20 h-20 bg-brand-500 text-white rounded-[30px] flex items-center justify-center mx-auto text-3xl shadow-xl shadow-sky-100"><i className="fas fa-scroll"></i></div>
+                        <h2 className="text-4xl font-black text-brand-500 tracking-tighter">{cleanText("كتيب النظام الشامل")}</h2>
+                        <p className="text-slate-400 font-black text-xs uppercase tracking-widest">التحفة التقنية - إصدار النخبة 1.0</p>
+                    </div>
+                    
+                    <div className="doc-card">
+                        <h3 className="text-xl font-black text-brand-500 mb-4 flex items-center gap-3"><i className="fas fa-microchip"></i> قصة الصنع والأدوات</h3>
+                        <p className="text-slate-600 leading-relaxed font-bold text-sm">تم تطوير هذا النظام التعليمي المتكامل ليكون سنداً للأستاذ والتلميذ، حيث استخدمت أقوى الأدوات العالمية مثل <b>Android Studio</b> لبناء الواجهة و <b>VS Code</b> لكتابة الشيفرة البرمجية مع الاعتماد على <b>Firebase</b> للبيانات اللحظية وتقنيات <b>React</b> للواجهة التفاعلية.</p>
+                    </div>
+
+                    <div className="doc-card">
+                        <h3 className="text-xl font-black text-red-600 mb-4 flex items-center gap-3"><i className="fas fa-fingerprint"></i> الحماية والحقوق والقوانين</h3>
+                        <p className="text-slate-600 leading-relaxed font-bold text-sm">هذا التطبيق ملكية فكرية محمية. يمنع منعاً باتاً محاولة اختراقه أو تخريبه أو سرقة كود المصدر، كما تمنع <b>الهندسة العكسية</b> (Reverse Engineering) للوصول لقواعد البيانات. أي محاولة عبث ستعرض صاحبها للمساءلة القانونية الصارمة وحظر الجهاز للأبد من النظام.</p>
+                    </div>
+
+                    <div className="doc-card">
+                        <h3 className="text-xl font-black text-brand-500 mb-4 flex items-center gap-3"><i className="fas fa-medal"></i> فريق النخبة والمساهمون</h3>
+                        <div className="grid grid-cols-2 gap-4 text-center font-black text-slate-700 text-sm">
+                            {team.map((n, i) => <div key={i} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">{cleanText(n)}</div>)}
+                        </div>
+                    </div>
+
+                    <div className="doc-card text-center py-10 opacity-50"><p className="font-black text-slate-400 text-[10px] tracking-widest uppercase">Made with love for Education</p></div>
+                </div>
+            );
+
+            return (
+                <div className="bg-white p-12 text-center space-y-10 rounded-[50px] border border-slate-100 shadow-sm shadow-slate-100 animate-in zoom-in duration-500">
+                    <div className="w-24 h-24 bg-brand-500 rounded-[35px] flex items-center justify-center mx-auto text-4xl text-white shadow-2xl animate-bounce-slow"><i className="fas fa-shield-halved"></i></div>
+                    <h2 className="text-4xl font-black tracking-tighter text-slate-800 drop-shadow-sm uppercase">Elite Class</h2>
+                    <div className="text-right space-y-4 font-bold">
+                        <div className="p-7 bg-slate-50 rounded-[30px] flex justify-between items-center border border-slate-100"><span className="text-slate-400 text-xs">{cleanText("المطور الرسمي")}</span><span className="text-brand-500 font-black">{cleanText("بن شعبان أسامة")}</span></div>
+                        <div className="p-7 bg-slate-50 rounded-[30px] flex justify-between items-center border border-slate-100"><span className="text-slate-400 text-xs">{cleanText("بإشراف الموجه")}</span><span className="text-slate-700 font-black">{cleanText("الحاج علي هشام")}</span></div>
+                        <button onClick={()=>setPage('doc')} className="w-full p-10 vibrant-btn text-white rounded-[45px] font-black text-xl flex items-center justify-center gap-5 shadow-xl group saturated">
+                            <i className="fas fa-book-open group-hover:rotate-12 transition-transform"></i> 
+                            <span>{cleanText("دليل النظام والتوثيق")}</span>
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        function Sidebar({ onClose, onTab, onLogout }) {
+            const items = [
+                { id: 'home', label: 'الرئيسية', icon: 'fa-house' },
+                { id: 'chat', label: 'غرفة الشات', icon: 'fa-comments' },
+                { id: 'points', label: 'لوحة الترتيب', icon: 'fa-star' },
+                { id: 'exams', label: 'النماذج', icon: 'fa-file-lines' },
+                { id: 'ai', label: 'الذكاء الاصطناعي', icon: 'fa-robot' },
+                { id: 'calc', label: 'حساب المعدل', icon: 'fa-calculator' },
+                { id: 'classes', label: 'إدارة الأقسام', icon: 'fa-users-gear' },
+                { id: 'advice', label: 'نصائح وتوجيهات', icon: 'fa-lightbulb' },
+                { id: 'info', label: 'عن النظام', icon: 'fa-circle-info' },
+            ];
+            return (
+                <div className="fixed inset-0 z-[100] animate-in fade-in duration-300">
+                    <div onClick={onClose} className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
+                    <aside className="absolute top-0 right-0 bottom-0 w-80 sidebar-bg px-8 py-10 shadow-2xl flex flex-col rounded-l-[60px] animate-in slide-in-from-right duration-500">
+                        <div className="flex justify-between items-center mb-16 px-2"><h3 className="font-black text-2xl text-white tracking-widest">{cleanText("القائمة")}</h3><button onClick={onClose} className="text-white/40 hover:text-white transition-colors"><i className="fas fa-times text-2xl"></i></button></div>
+                        <div className="flex-1 space-y-2 overflow-y-auto no-scrollbar">
+                            {items.map(i => (
+                                <button key={i.id} onClick={()=>onTab(i.id)} className="w-full flex items-center gap-6 p-6 rounded-[30px] font-black text-white/80 hover:text-white hover:bg-white/10 transition-all active:translate-x-3 duration-300">
+                                    <i className={`fas ${i.icon} w-6 text-xl`}></i><span className="tracking-tight">{cleanText(i.label)}</span>
+                                </button>
+                            ))}
+                        </div>
+                        <button onClick={onLogout} className="w-full flex items-center gap-6 p-7 rounded-[35px] font-black text-white mt-10 bg-red-500/30 hover:bg-red-500/40 transition-all active:scale-95 border border-red-400/20"><i className="fas fa-power-off w-6 text-xl"></i><span>{cleanText("تسجيل الخروج")}</span></button>
+                    </aside>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
